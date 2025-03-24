@@ -91,7 +91,8 @@ curl -X 'POST'   'http://127.0.0.1:8000/transcribe'   -F 'file=@path_to_your_aud
 Example Response:
 ```json
 {
-  "transcription": "This is the transcribed text of the audio file."
+  "transcription": "Hello, how are you today?",
+  "translation": "नमस्ते, आप आज कैसे हैं?"
 }
 ```
 
