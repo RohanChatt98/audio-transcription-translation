@@ -1,50 +1,43 @@
 import os
-from fastapi import FastAPI, File, UploadFile, HTTPException
+import shutil
 import uvicorn
-import logging
-import uuid
-from S3_client import upload_to_s3
-from transcription_client import transcribe_audio,fetch_transcription_text
-from llm import analyze_text_with_groq
+from fastapi import FastAPI, File, UploadFile
+from S3_client import upload_to_s3, download_from_s3
+from transcription_client import transcribe_audio
+from llm import translate_to_hindi
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
-
-# FastAPI App
 app = FastAPI()
 
-@app.post("/upload_audio/")
-async def upload_audio(file: UploadFile = File(...)):
-    try:
-        # Save file locally
-        file_path = f"temp_{uuid.uuid4().hex}.mp3"
-        with open(file_path, "wb") as buffer:
-            buffer.write(file.file.read())
+UPLOAD_FOLDER = "uploads/"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-        # Upload to S3
-        s3_uri = upload_to_s3(file_path, file.filename)
-        #os.remove(file_path)
+@app.post("/transcribe/")
+async def transcribe(file: UploadFile = File(...)):
+    """Handles audio transcription & translation."""
+    
+    # Save uploaded file locally
+    local_file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    with open(local_file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-        # Start Transcription
-        job_name = f"transcription-{uuid.uuid4().hex}"
-        transcript_uri = transcribe_audio(s3_uri, job_name)
+    # Upload file to S3
+    s3_key = f"audio/{file.filename}"
+    s3_uri = upload_to_s3(local_file_path, s3_key)
 
-        # Fetch Transcription Text
-        transcript_text = fetch_transcription_text(transcript_uri)
+    # Download file back (needed for Whisper)
+    downloaded_path = os.path.join(UPLOAD_FOLDER, f"downloaded_{file.filename}")
+    download_from_s3(s3_key, downloaded_path)
 
-        # Analyze text using Groq (Mistral) with LangChain
-        summary, sentiment = analyze_text_with_groq(transcript_text)
+    # Transcribe audio using OpenAI Whisper
+    transcription = transcribe_audio(downloaded_path)
 
-        return {
-            "transcription": transcript_text,
-            "summary": summary,
-            "sentiment": sentiment
-        }
-    except Exception as e:
-        logger.error(f"Error processing audio: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error processing audio")
+    # Translate transcription to Hindi using LangChain and Groq's Llama3
+    translation = translate_to_hindi(transcription)
+
+    return {
+        "transcription": transcription,
+        "translation": translation
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

@@ -1,138 +1,119 @@
 
-# Audio Transcription & Summarization API
+# Audio Transcription and Summarization
 
-This project leverages the power of AWS Transcribe for real-time transcription, Groq for language models, and FastAPI to create a fast and scalable web application. The system listens for audio files, processes them to generate transcriptions, summarizes the transcribed text, and translates the summary into Hindi, all through a simple API.
+This project provides an API that allows users to upload audio files, transcribe them into text using OpenAI Whisper, and get summarized version of the transcriptions in hindi. The backend is built using FastAPI, and OpenAI's API is used for transcription and analysis.
 
 ## Features
 
-- **Audio Transcription**: Automatically transcribes audio files to text using AWS Transcribe.
-- **Summarization**: Generates a concise summary of the transcription.
-- **Translation**: Translates the summary into Hindi for multilingual support.
-- **Real-time Processing**: Processes audio files in real-time, providing rapid feedback.
-- **FastAPI Backend**: Provides a high-performance API layer for integration with other systems.
+- **Audio Transcription:** Transcribe audio files to text using OpenAI Whisper API.
+- **Summarization:** After transcription, the text can be processed for summarization(implemented with a separate service, e.g., Llama 3.2).
+- **Real-time Processing:** Upload audio files to be transcribed and processed immediately.
+- **Easy to Integrate:** This API can be easily integrated with other systems to transcribe and analyze audio interactions.
 
-## Architecture Overview
+## Requirements
 
-1. **AWS Transcribe**: Used to transcribe audio files into text.
-2. **Groq API**: Utilizes advanced language models to process the transcriptions for summarization and translation.
-3. **FastAPI**: A fast and efficient Python web framework used for creating the API endpoints.
-4. **S3 Bucket**: Used to store and retrieve audio files for processing.
-5. **Logging and Error Handling**: Built-in logging and error handling ensure smooth operation and troubleshooting.
+- Python 3.10 or higher
+- `FastAPI` for the backend API
+- `openai` Python package for OpenAI API access
+- `dotenv` for managing environment variables
+- `uvicorn` for running the FastAPI server
 
-## Getting Started
+## Installation
 
-Follow these steps to get the project up and running on your local machine.
-
-### Prerequisites
-
-1. **Python 3.10+**: Ensure Python 3.10 or later is installed.
-2. **AWS Account**: You need an AWS account with access to Transcribe and S3.
-3. **Groq API Key**: Obtain a Groq API key to use their language models for summarization and translation.
-
-### Step 1: Clone the Repository
-
-Clone the repository to your local machine:
+### Step 1: Clone the repository
 
 ```bash
-git clone https://github.com/RohanChatt98/audio-transcription-summary.git
-cd audio-transcription-summary
+git clone <repository-url>
+cd <repository-directory>
 ```
 
-### Step 2: Set Up the Environment
+### Step 2: Create a virtual environment
 
-1. Create a `.env` file in the root directory and add your AWS and Groq API keys:
-
-```
-AWS_ACCESS_KEY_ID=your-access-key-id
-AWS_SECRET_ACCESS_KEY=your-secret-access-key
-AWS_REGION=us-east-1
-S3_BUCKET=your-s3-bucket-name
-GROQ_API_KEY=your-groq-api-key
+```bash
+python3 -m venv venv
 ```
 
-2. Install the required dependencies:
+### Step 3: Activate the virtual environment
+
+- For Windows:
+    ```bash
+    venv\Scripts\activate
+    ```
+
+- For MacOS/Linux:
+    ```bash
+    source venv/bin/activate
+    ```
+
+### Step 4: Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: Run the Application
+### Step 5: Set up your OpenAI API Key
 
-Run the FastAPI application locally using `uvicorn`:
-
-```bash
-uvicorn main:app --reload
-```
-
-The API will be available at `http://127.0.0.1:8000`.
-
-### Step 4: Test the API
-
-To test the API, send a `POST` request to `/upload_audio/` with an audio file. You can use tools like `curl` or Postman.
-
-#### Example using `curl`:
+1. Create a `.env` file in the root of the project directory.
+2. Add your OpenAI API key as follows:
 
 ```bash
-curl -X 'POST'   'http://127.0.0.1:8000/upload_audio/'   -H 'accept: application/json'   -H 'Content-Type: multipart/form-data'   -F 'file=@path_to_audio_file.wav;type=audio/wav'
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-### Step 5: Get the Response
+You can get your OpenAI API key from the [OpenAI API platform](https://platform.openai.com/account/api-keys).
 
-After uploading the audio file, the API will return a JSON response with the transcription, summary, and translation.
+## Usage
 
+### Starting the Server
+
+After installing the dependencies and setting up the environment variables, you can start the FastAPI server:
+
+```bash
+uvicorn app:app --reload
+```
+
+This will start the server on `http://127.0.0.1:8000`.
+
+### API Endpoints
+
+1. **POST /transcribe**
+   - Upload an audio file (e.g., MP3, WAV) to be transcribed.
+   - **Request Body:**
+     - `file`: The audio file to transcribe (multipart/form-data).
+   - **Response:**
+     - Returns the transcribed text in JSON format.
+
+Example Request:
+```bash
+curl -X 'POST'   'http://127.0.0.1:8000/transcribe'   -F 'file=@path_to_your_audio_file.mp3'
+```
+
+Example Response:
 ```json
 {
-  "transcription": "The stale smell of old beer lingers. It takes heat to bring out the odor. A cold dip restores health and zest. A salt pickle tastes fine with ham. Tacos al pastor are my favorite. A zestful food is the hot cross bun.",
-  "summary": "Translation:",
-  "sentiment": "तले हुए स्वाद का गंध पुराने पीले बियर का ही होता है। उसे गर्मी से उबरने में ही इसका स्वाद आता है। ठंडी डीप से स्वास्थ्य और जोश को रोका जा सकता है। स्वादिष्ट नमक की टमाटर अच्छा है हाम से। टैकोस अल पास्तोर मेरे पसंदीदा हैं। एक ताज़ा खाना होट क्रॉस बन बहुत स्वादिष्ट है।"
+  "transcription": "This is the transcribed text of the audio file."
 }
 ```
 
-## API Endpoints
+## Contributing
 
-### `POST /upload_audio/`
+We welcome contributions to improve this project. You can contribute by:
 
-Uploads an audio file and returns its transcription, summary, and translation.
-
-#### Request Body:
-- **file**: The audio file in `.wav` format.
-
-#### Response:
-- **transcription**: The transcribed text of the audio.
-- **summary**: The summary of the transcribed text.
-- **sentiment**: The translation of the summary into Hindi.
-
----
-
-## Development and Contributions
-
-Feel free to fork this project and submit pull requests. Here are some areas where you could contribute:
-
-- Add support for more file formats (e.g., MP3, OGG).
-- Improve error handling for file uploads.
-- Integrate additional LLMs for better summarization.
-
-### Running Tests
-
-To run tests (if any), use:
-
-```bash
-pytest
-```
-
-### Code Style
-
-Please follow **PEP8** standards and add docstrings for new functions.
+- Forking the repository.
+- Creating a new branch (`git checkout -b feature-xyz`).
+- Making your changes and committing them (`git commit -am 'Add feature xyz'`).
+- Pushing your changes (`git push origin feature-xyz`).
+- Creating a pull request.
 
 ## License
 
-This project is licensed under the Apache Licence version 2.0.
+This project is licensed under the Apache License Version 2.0 - see the [LICENSE](LICENSE) file for details.
 
----
+## Acknowledgements
 
-## Contact
+- OpenAI for providing Whisper API .
+- Groq for providing Llama-3.2-3B-preview 
+- FastAPI for building the backend API.
+- Uvicorn for fast and efficient ASGI server.
 
-For any questions or suggestions, feel free to reach out to:
-
-- **Your Name**: [Rohan Chatterjee]
-- **Email id**: [rohan.chattrji@gmail.com]
+For any further issues, feel free to open an issue in the GitHub repository.
